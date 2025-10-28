@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>별똥별 잡기 게임 ✨</title>
 <style>
-  /* ===== 기본 세팅 ===== */
   body {
     margin: 0;
     padding: 0;
@@ -32,28 +31,30 @@
     margin-top: 5px;
   }
 
+  /* ===== 게임 영역 ===== */
+  #gameArea {
+    position: relative;
+    margin: 20px auto;
+    width: 60vw; /* 화면 가운데 영역 */
+    height: 80vh;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    border-radius: 10px;
+  }
+
   /* ===== 별똥별 ===== */
   .star {
     position: absolute;
-    width: 30px;  /* 기본 크기 증가 */
+    width: 30px;
     height: 30px;
-    background: radial-gradient(circle at 30% 30%, #fffecf 0%, #ffea00 40%, #ffc600 100%);
-    border-radius: 50%;
-    box-shadow: 0 0 10px 4px #fffecf;
+    background: radial-gradient(circle at 30% 30%, #fffecf 0%, #ffea00 40%, #ffb400 100%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 
+                       50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    box-shadow: 0 0 10px 3px #fffecf;
     cursor: pointer;
-    animation: fall 3s linear forwards;
+    animation: fall 6s linear forwards; /* 속도 2배 느리게 (3s → 6s) */
+    pointer-events: auto;
     image-rendering: pixelated;
-    pointer-events: none; /* 클릭은 hitbox가 담당 */
-  }
-
-  /* 클릭 판정용 hitbox */
-  .hitbox {
-    position: absolute;
-    width: 50px;   /* 별보다 살짝 크게 */
-    height: 50px;
-    transform: translate(-10px, -10px);
-    cursor: pointer;
-    background: transparent;
   }
 
   @keyframes fall {
@@ -62,7 +63,18 @@
     100% { transform: translateY(100vh); opacity: 0; }
   }
 
-  /* ===== "Make a wish!" 텍스트 ===== */
+  /* ===== 클릭 판정 hitbox ===== */
+  .hitbox {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    transform: translate(-10px, -10px);
+    cursor: pointer;
+    background: transparent;
+    pointer-events: auto;
+  }
+
+  /* ===== Make a wish ===== */
   #wish {
     position: absolute;
     top: 50%;
@@ -72,10 +84,11 @@
     color: #fffd8a;
     text-shadow: 0 0 8px #fff;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
   }
 
-  /* ===== 게임 종료 화면 ===== */
+  /* ===== 게임 종료 ===== */
   #gameOver {
     position: absolute;
     top: 50%;
@@ -86,6 +99,7 @@
     border: 2px solid #fff;
     border-radius: 10px;
     display: none;
+    z-index: 10;
   }
 
   button {
@@ -108,6 +122,9 @@
   <h1>🌠 별똥별 잡기 게임 🌠</h1>
   <div id="scoreboard">점수: <span id="score">0</span></div>
   <div id="timer">남은 시간: <span id="time">20</span>초</div>
+  
+  <div id="gameArea"></div>
+
   <div id="wish">Make a wish!</div>
   <div id="gameOver">
     <h2>게임 종료!</h2>
@@ -116,6 +133,7 @@
   </div>
 
   <script>
+    const gameArea = document.getElementById('gameArea');
     const scoreDisplay = document.getElementById('score');
     const timeDisplay = document.getElementById('time');
     const wishText = document.getElementById('wish');
@@ -128,7 +146,7 @@
     let timerInterval;
     let gameActive = true;
 
-    // ===== 별 생성 함수 =====
+    // ===== 별 생성 =====
     function createStar() {
       if (!gameActive) return;
 
@@ -138,42 +156,41 @@
       star.classList.add('star');
       hitbox.classList.add('hitbox');
 
-      const x = Math.random() * (window.innerWidth - 60);
+      const areaWidth = gameArea.clientWidth;
+      const x = Math.random() * (areaWidth - 60);
+
       star.style.left = `${x}px`;
-      star.style.top = `-30px`;
+      star.style.top = `-40px`;
       hitbox.style.left = `${x}px`;
-      hitbox.style.top = `-30px`;
+      hitbox.style.top = `-40px`;
 
-      // 별 & hitbox 애니메이션 동기화
-      star.style.animation = 'fall 3s linear forwards';
-      hitbox.style.animation = 'fall 3s linear forwards';
-
-      // 클릭 시
-      hitbox.addEventListener('click', () => {
+      // 클릭 즉시 반응 (딜레이 최소화)
+      const handleClick = () => {
         if (!gameActive) return;
         score++;
         scoreDisplay.textContent = score;
         showWish();
         star.remove();
         hitbox.remove();
-      });
+      };
 
-      document.body.appendChild(star);
-      document.body.appendChild(hitbox);
+      hitbox.addEventListener('mousedown', handleClick); // 즉시 반응
+      hitbox.addEventListener('touchstart', handleClick); // 모바일 대응
 
-      // 3초 후 자동 제거
+      gameArea.appendChild(star);
+      gameArea.appendChild(hitbox);
+
+      // 별 제거 타이밍 (6s 후)
       setTimeout(() => {
         star.remove();
         hitbox.remove();
-      }, 3000);
+      }, 6000);
     }
 
-    // ===== “Make a wish!” 표시 =====
+    // ===== “Make a wish!” =====
     function showWish() {
       wishText.style.opacity = 1;
-      setTimeout(() => {
-        wishText.style.opacity = 0;
-      }, 700);
+      setTimeout(() => wishText.style.opacity = 0, 500);
     }
 
     // ===== 타이머 =====
@@ -193,8 +210,9 @@
       timeDisplay.textContent = timeLeft;
       gameActive = true;
       gameOverScreen.style.display = 'none';
+      gameArea.innerHTML = '';
 
-      gameInterval = setInterval(createStar, 500);
+      gameInterval = setInterval(createStar, 600);
       startTimer();
     }
 
@@ -209,7 +227,7 @@
 
     // ===== 다시 시작 =====
     function restartGame() {
-      document.querySelectorAll('.star, .hitbox').forEach(s => s.remove());
+      gameArea.innerHTML = '';
       startGame();
     }
 
