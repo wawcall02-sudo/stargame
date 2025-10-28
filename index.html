@@ -35,7 +35,7 @@
   #gameArea {
     position: relative;
     margin: 20px auto;
-    width: 54vw; /* 중앙 영역 너비 10% 감소 (60vw → 54vw) */
+    width: 54vw;
     height: 80vh;
     border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 10px;
@@ -48,7 +48,7 @@
     width: 60px; /* 클릭 가능 영역 */
     height: 60px;
     cursor: pointer;
-    animation: fall 5.4s linear forwards; /* 속도 10% 빨라짐 (6s → 5.4s) */
+    animation: fall linear forwards;
   }
 
   /* ===== 별 모양 ===== */
@@ -118,7 +118,7 @@
 <body>
   <h1>🌠 별똥별 잡기 게임 🌠</h1>
   <div id="scoreboard">점수: <span id="score">0</span></div>
-  <div id="timer">남은 시간: <span id="time">20</span>초</div>
+  <div id="timer">남은 시간: <span id="time">40</span>초</div>
   
   <div id="gameArea"></div>
 
@@ -137,11 +137,16 @@
     const gameOverScreen = document.getElementById('gameOver');
     const finalScore = document.getElementById('finalScore');
 
+    // 기본값
     let score = 0;
-    let timeLeft = 20;
+    let timeLeft = 40;
     let gameInterval;
     let timerInterval;
     let gameActive = true;
+
+    // 속도 관련 (기본 설정)
+    let baseFallSpeed = 4.86; // 초 단위
+    let baseSpawnRate = 480; // ms 단위
 
     // ===== 별 생성 =====
     function createStar() {
@@ -158,6 +163,10 @@
       wrap.style.left = `${x}px`;
       wrap.style.top = `-60px`;
 
+      // 현재 난이도에 따른 낙하 속도 적용
+      const currentSpeed = baseFallSpeed / getDifficultyMultiplier();
+      wrap.style.animationDuration = `${currentSpeed}s`;
+
       // 클릭 시 즉시 반응
       wrap.addEventListener('mousedown', handleClick);
       wrap.addEventListener('touchstart', handleClick, { passive: true });
@@ -168,15 +177,31 @@
         scoreDisplay.textContent = score;
         showWish();
         wrap.remove();
+
+        // 점수 변경 시 난이도 재조정
+        adjustDifficulty();
       }
 
       gameArea.appendChild(wrap);
 
-      // 자동 제거
-      setTimeout(() => wrap.remove(), 5400);
+      // 별이 다 떨어지면 제거
+      setTimeout(() => wrap.remove(), currentSpeed * 1000);
     }
 
-    // ===== "Make a wish!" =====
+    // ===== 난이도 계산 (점수 10마다 10% 상승) =====
+    function getDifficultyMultiplier() {
+      const level = Math.floor(score / 10); // 0, 1, 2, 3...
+      return 1 + level * 0.1;
+    }
+
+    // ===== 난이도 조정 =====
+    function adjustDifficulty() {
+      clearInterval(gameInterval);
+      const newRate = baseSpawnRate / getDifficultyMultiplier();
+      gameInterval = setInterval(createStar, newRate);
+    }
+
+    // ===== “Make a wish!” 표시 =====
     function showWish() {
       wishText.style.opacity = 1;
       setTimeout(() => wishText.style.opacity = 0, 500);
@@ -194,14 +219,15 @@
     // ===== 게임 시작 =====
     function startGame() {
       score = 0;
-      timeLeft = 20;
+      timeLeft = 40;
       scoreDisplay.textContent = score;
       timeDisplay.textContent = timeLeft;
       gameActive = true;
       gameOverScreen.style.display = 'none';
       gameArea.innerHTML = '';
 
-      gameInterval = setInterval(createStar, 600);
+      // 초기 생성 속도
+      gameInterval = setInterval(createStar, baseSpawnRate);
       startTimer();
     }
 
