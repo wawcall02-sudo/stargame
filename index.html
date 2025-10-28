@@ -35,26 +35,34 @@
   #gameArea {
     position: relative;
     margin: 20px auto;
-    width: 60vw; /* 화면 가운데 영역 */
+    width: 54vw; /* 중앙 영역 너비 10% 감소 (60vw → 54vw) */
     height: 80vh;
-    border: 2px dashed rgba(255, 255, 255, 0.3);
-    overflow: hidden;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 10px;
+    overflow: hidden;
   }
 
-  /* ===== 별똥별 ===== */
+  /* ===== 별 그룹 ===== */
+  .star-wrap {
+    position: absolute;
+    width: 60px; /* 클릭 가능 영역 */
+    height: 60px;
+    cursor: pointer;
+    animation: fall 5.4s linear forwards; /* 속도 10% 빨라짐 (6s → 5.4s) */
+  }
+
+  /* ===== 별 모양 ===== */
   .star {
     position: absolute;
+    top: 15px;
+    left: 15px;
     width: 30px;
     height: 30px;
     background: radial-gradient(circle at 30% 30%, #fffecf 0%, #ffea00 40%, #ffb400 100%);
     clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 
                        50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
     box-shadow: 0 0 10px 3px #fffecf;
-    cursor: pointer;
-    animation: fall 6s linear forwards; /* 속도 2배 느리게 (3s → 6s) */
-    pointer-events: auto;
-    image-rendering: pixelated;
+    pointer-events: none;
   }
 
   @keyframes fall {
@@ -63,18 +71,7 @@
     100% { transform: translateY(100vh); opacity: 0; }
   }
 
-  /* ===== 클릭 판정 hitbox ===== */
-  .hitbox {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    transform: translate(-10px, -10px);
-    cursor: pointer;
-    background: transparent;
-    pointer-events: auto;
-  }
-
-  /* ===== Make a wish ===== */
+  /* ===== Make a wish! ===== */
   #wish {
     position: absolute;
     top: 50%;
@@ -150,44 +147,36 @@
     function createStar() {
       if (!gameActive) return;
 
+      const wrap = document.createElement('div');
       const star = document.createElement('div');
-      const hitbox = document.createElement('div');
-
+      wrap.classList.add('star-wrap');
       star.classList.add('star');
-      hitbox.classList.add('hitbox');
+      wrap.appendChild(star);
 
       const areaWidth = gameArea.clientWidth;
       const x = Math.random() * (areaWidth - 60);
+      wrap.style.left = `${x}px`;
+      wrap.style.top = `-60px`;
 
-      star.style.left = `${x}px`;
-      star.style.top = `-40px`;
-      hitbox.style.left = `${x}px`;
-      hitbox.style.top = `-40px`;
+      // 클릭 시 즉시 반응
+      wrap.addEventListener('mousedown', handleClick);
+      wrap.addEventListener('touchstart', handleClick, { passive: true });
 
-      // 클릭 즉시 반응 (딜레이 최소화)
-      const handleClick = () => {
+      function handleClick() {
         if (!gameActive) return;
         score++;
         scoreDisplay.textContent = score;
         showWish();
-        star.remove();
-        hitbox.remove();
-      };
+        wrap.remove();
+      }
 
-      hitbox.addEventListener('mousedown', handleClick); // 즉시 반응
-      hitbox.addEventListener('touchstart', handleClick); // 모바일 대응
+      gameArea.appendChild(wrap);
 
-      gameArea.appendChild(star);
-      gameArea.appendChild(hitbox);
-
-      // 별 제거 타이밍 (6s 후)
-      setTimeout(() => {
-        star.remove();
-        hitbox.remove();
-      }, 6000);
+      // 자동 제거
+      setTimeout(() => wrap.remove(), 5400);
     }
 
-    // ===== “Make a wish!” =====
+    // ===== "Make a wish!" =====
     function showWish() {
       wishText.style.opacity = 1;
       setTimeout(() => wishText.style.opacity = 0, 500);
